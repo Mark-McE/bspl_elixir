@@ -124,6 +124,8 @@ defmodule BSPL.Adaptor.Worker do
       |> Enum.map(fn {name, cols, rows} -> {name, rows |> Enum.map(&Enum.zip(cols, &1))} end)
       |> Enum.into(%{})
 
+    IO.inspect("new")
+
     {:reply, result, state}
   end
 
