@@ -3,7 +3,7 @@ defmodule BSPL.MixProject do
 
   def project do
     [
-      app: :b_s_p_l,
+      app: :bspl,
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
