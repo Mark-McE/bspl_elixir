@@ -50,6 +50,10 @@ defmodule BSPL.Adaptor do
       `:any` used to represent data that this agent can set
       """
       def next_messages do
+        GenServer.call(__MODULE__, {:next_messages_extra})
+      end
+
+      def next_messages_min do
         GenServer.call(__MODULE__, {:next_messages})
       end
     end

@@ -41,6 +41,29 @@ defmodule BSPL.Adaptor.Worker do
     {:reply, next_messages(all_messages, role, module, repo), state}
   end
 
+  @impl GenServer
+  def handle_call({:next_messages_extra}, _, state) do
+    %{repo: repo, role: role, module: module, messages: all_messages} = state
+
+    {:reply, next_messages_extra(all_messages, role, module, repo), state}
+  end
+
+  @impl GenServer
+  def handle_call({:send, address, map}, _from, state = %{messages: messages, role: role}) do
+    keys = map.keys()
+
+    result =
+      System.cmd("curl", [
+        "-H",
+        "Content-Type: application/json",
+        address,
+        "-d",
+        map |> inspect() |> String.replace("=>", ":") |> String.replace("%", "")
+      ])
+
+    {:reply, :ok, state}
+  end
+
   ## Private Functions
 
   ## Functions for init/1
@@ -83,6 +106,30 @@ defmodule BSPL.Adaptor.Worker do
   end
 
   ## Functions for next_messages/0
+
+  defp next_messages_extra(all_messages, role, module, repo) do
+    map = next_messages(all_messages, role, module, repo)
+
+    map_including_zero_in_msgs =
+      all_messages
+      |> sent_by(role)
+      |> Enum.filter(&(params(&1) |> adorned_with(:in) == []))
+      |> Enum.reduce(map, fn msg, acc -> Map.put(acc, name(msg), [[]]) end)
+
+    for {msg_name, bindings} <- map_including_zero_in_msgs do
+      msg = all_messages |> Enum.find(&(name(&1) == msg_name))
+      out_fields = msg |> params() |> adorned_with(:out) |> Enum.map(&to_field/1)
+
+      complete_bindings =
+        bindings
+        |> Enum.map(fn current_entries ->
+          Enum.zip(out_fields, Stream.cycle([:any])) ++ current_entries
+        end)
+
+      {msg_name, complete_bindings |> Enum.into(%{})}
+    end
+    |> Enum.into(%{})
+  end
 
   defp next_messages(all_messages, role, module, repo) do
     for msg <- all_messages,
