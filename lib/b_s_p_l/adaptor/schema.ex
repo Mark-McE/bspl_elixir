@@ -39,12 +39,16 @@ defmodule BSPL.Adaptor.Schema do
     end
   end
 
-  def name(schema) do
+  def table_name(schema) do
     schema.__schema__(:source)
   end
 
   def primary_key(schema) do
     schema.__schema__(:primary_key)
+  end
+
+  def timestamps(_schema) do
+    [:inserted_at, :updated_at]
   end
 
   def fields(schema) do
