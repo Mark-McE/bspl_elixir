@@ -58,7 +58,7 @@ defmodule BSPL.Adaptor do
       end
 
       def send(address, map) do
-        GenServer.call(__MODULE__, {:send})
+        GenServer.call(__MODULE__, {:send, address, map})
       end
     end
   end
