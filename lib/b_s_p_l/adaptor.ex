@@ -53,10 +53,6 @@ defmodule BSPL.Adaptor do
         GenServer.call(__MODULE__, {:next_messages_extra})
       end
 
-      def next_messages_min do
-        GenServer.call(__MODULE__, {:next_messages})
-      end
-
       def send(address, map) do
         GenServer.call(__MODULE__, {:send, address, map})
       end
