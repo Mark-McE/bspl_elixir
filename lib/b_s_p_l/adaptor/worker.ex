@@ -49,9 +49,7 @@ defmodule BSPL.Adaptor.Worker do
   end
 
   @impl GenServer
-  def handle_call({:send, address, map}, _from, state = %{messages: messages, role: role}) do
-    keys = map.keys()
-
+  def handle_call({:send, address, map}, _from, state) do
     result =
       System.cmd("curl", [
         "-H",
