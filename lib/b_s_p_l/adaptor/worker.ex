@@ -126,7 +126,7 @@ defmodule BSPL.Adaptor.Worker do
           Enum.zip(out_fields, Stream.cycle([:any])) ++ current_entries
         end)
 
-      {msg_name, complete_bindings |> Enum.into(%{})}
+      {msg_name, complete_bindings |> Enum.map(&Enum.into(&1, %{}))}
     end
     |> Enum.into(%{})
   end
