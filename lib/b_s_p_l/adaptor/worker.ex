@@ -9,7 +9,7 @@ defmodule BSPL.Adaptor.Worker do
   use GenServer
 
   @impl GenServer
-  def init(module: module, protocol_path: protocol_path, role: role, repo: repo) do
+  def init(module: module, path: protocol_path, role: role, repo: repo, port: port) do
     {protocol_name,
      [
        roles: _,
