@@ -42,14 +42,13 @@ defmodule BSPL.Adaptor.Worker do
 
   @impl GenServer
   def handle_call({:send, address, map}, _from, state) do
-    result =
-      System.cmd("curl", [
-        "-H",
-        "Content-Type: application/json",
-        address,
-        "-d",
-        map |> inspect() |> String.replace("=>", ":") |> String.replace("%", "")
-      ])
+    System.cmd("curl", [
+      "-H",
+      "Content-Type: application/json",
+      address,
+      "-d",
+      map |> inspect() |> String.replace("=>", ":") |> String.replace("%", "")
+    ])
 
     {:reply, :ok, state}
   end
