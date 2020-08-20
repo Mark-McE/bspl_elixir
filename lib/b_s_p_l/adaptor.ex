@@ -6,6 +6,16 @@ defmodule BSPL.Adaptor do
   defmacro __using__(_opts) do
     quote do
       @doc """
+      Defines how to supervise a process running this module
+      """
+      def child_spec(opts) do
+        %{
+          id: __MODULE__,
+          start: {__MODULE__, :start_link, [opts]}
+        }
+      end
+
+      @doc """
       Starts the adaptor
       """
       def start_link(opts) do
