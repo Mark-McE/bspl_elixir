@@ -2,12 +2,11 @@ defmodule BSPL.Adaptor.Worker do
   @moduledoc false
 
   import String, only: [to_existing_atom: 1, downcase: 1]
+  # TODO: replace all query! calls with repo.query!
   import Ecto.Adapters.SQL, only: [query!: 2]
   import BSPL.Parser
   import BSPL.Adaptor.Schema
   use GenServer
-
-  ## Defining GenServer Callbacks
 
   @impl GenServer
   def init(module: module, protocol_path: protocol_path, role: role, repo: repo) do
@@ -35,17 +34,10 @@ defmodule BSPL.Adaptor.Worker do
   end
 
   @impl GenServer
-  def handle_call({:next_messages}, _, state) do
+  def handle_call({:enabled_messages}, _, state) do
     %{repo: repo, role: role, module: module, messages: all_messages} = state
 
-    {:reply, next_messages(all_messages, role, module, repo), state}
-  end
-
-  @impl GenServer
-  def handle_call({:next_messages_extra}, _, state) do
-    %{repo: repo, role: role, module: module, messages: all_messages} = state
-
-    {:reply, next_messages_extra(all_messages, role, module, repo), state}
+    {:reply, enabled_messages(all_messages, role, module, repo), state}
   end
 
   @impl GenServer
@@ -103,10 +95,10 @@ defmodule BSPL.Adaptor.Worker do
     |> repo.query!()
   end
 
-  ## Functions for next_messages/0
+  ## Functions for enabled_messages/0
 
-  defp next_messages_extra(all_messages, role, module, repo) do
-    map = next_messages(all_messages, role, module, repo)
+  defp enabled_messages(all_messages, role, module, repo) do
+    map = enabled_messages_db_data(all_messages, role, module, repo)
 
     map_including_zero_in_msgs =
       all_messages
@@ -129,11 +121,11 @@ defmodule BSPL.Adaptor.Worker do
     |> Enum.into(%{})
   end
 
-  defp next_messages(all_messages, role, module, repo) do
+  defp enabled_messages_db_data(all_messages, role, module, repo) do
     for msg <- all_messages,
         sent_by?(msg, role) and
           params(msg) |> adorned_with(:in) != [] do
-      query = select_next_messages(msg, all_messages, role, module)
+      query = select_enabled_messages(msg, all_messages, role, module)
       result = query!(repo, query)
 
       cols = result.columns |> Enum.map(&to_existing_atom/1)
@@ -151,7 +143,8 @@ defmodule BSPL.Adaptor.Worker do
   The results of the query represent valid messages this agent can send, that has not
   been sent before.
   """
-  defp select_next_messages(msg, all_msgs, role, module) do
+  # TODO: return curried functions? or changesets
+  defp select_enabled_messages(msg, all_msgs, role, module) do
     table_name = table_name(schema(msg, module))
     primary_key = primary_key(schema(msg, module))
     received_schemas = all_msgs |> received_by(role) |> Enum.map(&schema(&1, module))
