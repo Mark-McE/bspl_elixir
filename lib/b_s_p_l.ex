@@ -29,7 +29,12 @@ defmodule BSPL do
 
     bspl_adaptor = create_adaptor(protocol_name)
 
-    quote bind_quoted: [opts: opts, name: protocol_name, messages: messages, adaptor: bspl_adaptor] do
+    quote bind_quoted: [
+            opts: opts,
+            name: protocol_name,
+            messages: Macro.escape(messages),
+            adaptor: bspl_adaptor
+          ] do
       @adaptor adaptor
       @name name
       @messages messages
@@ -48,8 +53,8 @@ defmodule BSPL do
         children = [
           {@adaptor,
            [
-             name: name,
-             messages: messages,
+             name: @name,
+             messages: @messages,
              role: @role,
              repo: @repo,
              port: @port
