@@ -29,7 +29,8 @@ defmodule BSPL do
 
     bspl_adaptor = create_adaptor(protocol_name)
 
-    quote bind_quoted: [opts: opts, name: protocol_name, messages: messages] do
+    quote bind_quoted: [opts: opts, name: protocol_name, messages: messages, adaptor: bspl_adaptor] do
+      @adaptor adaptor
       @name name
       @messages messages
       @role opts[:role]
@@ -45,7 +46,7 @@ defmodule BSPL do
       @impl true
       def init(:ok) do
         children = [
-          {unquote(bspl_adaptor),
+          {@adaptor,
            [
              name: name,
              messages: messages,
