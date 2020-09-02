@@ -2,8 +2,6 @@ defmodule BSPL.Adaptor.Worker do
   @moduledoc false
 
   import String, only: [to_existing_atom: 1, downcase: 1]
-  # TODO: replace all query! calls with repo.query!
-  import Ecto.Adapters.SQL, only: [query!: 2]
   import BSPL.Parser
   import BSPL.Adaptor.Schema
   use GenServer
@@ -125,7 +123,7 @@ defmodule BSPL.Adaptor.Worker do
         sent_by?(msg, role) and
           params(msg) |> adorned_with(:in) != [] do
       query = select_enabled_messages(msg, all_messages, role, module)
-      result = query!(repo, query)
+      result = repo.query!(query)
 
       cols = result.columns |> Enum.map(&to_existing_atom/1)
       list_of_bindings = result.rows |> Enum.map(&Enum.zip(cols, &1))
