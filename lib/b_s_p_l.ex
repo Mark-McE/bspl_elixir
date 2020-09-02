@@ -20,8 +20,18 @@ defmodule BSPL do
   """
 
   defmacro __using__(opts) do
-    quote bind_quoted: [opts: opts] do
-      @path opts[:protocol_path]
+    {protocol_name,
+     [
+       roles: _,
+       params: _,
+       messages: messages
+     ]} = BSPL.Parser.parse!(opts[:protocol_path])
+
+    bspl_adaptor = create_adaptor(protocol_name)
+
+    quote bind_quoted: [opts: opts, name: protocol_name, messages: messages] do
+      @name name
+      @messages messages
       @role opts[:role]
       @repo opts[:repo]
       @port opts[:port] || 8591
@@ -34,23 +44,28 @@ defmodule BSPL do
 
       @impl true
       def init(:ok) do
-        adaptor = create_adaptor()
-
         children = [
-          {adaptor, module: __MODULE__, path: @path, role: @role, repo: @repo, port: @port}
+          {unquote(bspl_adaptor),
+           [
+             name: name,
+             messages: messages,
+             role: @role,
+             repo: @repo,
+             port: @port
+           ]}
         ]
 
         Supervisor.init(children, strategy: :one_for_one)
       end
-
-      defp create_adaptor do
-        module_name = Module.concat(__MODULE__, "Adaptor")
-        contents = quote do: use(BSPL.Adaptor)
-
-        Module.create(module_name, contents, Macro.Env.location(__ENV__))
-
-        module_name
-      end
     end
+  end
+
+  defp create_adaptor(protocol_name) do
+    module_name = Module.concat([BSPL, Protocols, Macro.camelize(protocol_name)])
+    contents = quote do: use(BSPL.Adaptor)
+
+    Module.create(module_name, contents, Macro.Env.location(__ENV__))
+
+    module_name
   end
 end

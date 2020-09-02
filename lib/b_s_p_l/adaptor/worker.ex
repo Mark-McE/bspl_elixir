@@ -7,21 +7,14 @@ defmodule BSPL.Adaptor.Worker do
   use GenServer
 
   @impl GenServer
-  def init(module: module, path: protocol_path, role: role, repo: repo, port: port) do
-    {protocol_name,
-     [
-       roles: _,
-       params: _,
-       messages: messages
-     ]} = parse!(protocol_path)
-
-    for msg <- messages, sent_by?(msg, role) or received_by?(msg, role) do
+  def init(name: protocol_name, messages: msgs, role: role, repo: repo, port: port) do
+    for msg <- msgs, sent_by?(msg, role) or received_by?(msg, role) do
       msg
-      |> create_schema!(protocol_name, module)
+      |> create_schema!(protocol_name)
       |> create_table!(repo)
     end
 
-    {:ok, %{role: role, messages: messages, repo: repo, module: module}}
+    {:ok, %{role: role, messages: msgs, repo: repo, name: protocol_name}}
   end
 
   @impl GenServer
@@ -33,9 +26,9 @@ defmodule BSPL.Adaptor.Worker do
 
   @impl GenServer
   def handle_call({:enabled_messages}, _, state) do
-    %{repo: repo, role: role, module: module, messages: all_messages} = state
+    %{repo: repo, role: role, name: protocol_name, messages: all_messages} = state
 
-    {:reply, enabled_messages(all_messages, role, module, repo), state}
+    {:reply, enabled_messages(all_messages, role, protocol_name, repo), state}
   end
 
   @impl GenServer
@@ -55,10 +48,10 @@ defmodule BSPL.Adaptor.Worker do
 
   ## Functions for init/1
 
-  defp create_schema!(msg, protocol_name, module) do
+  defp create_schema!(msg, protocol_name) do
     msg_name = name(msg)
     params = params(msg)
-    schema_module = schema(msg, module)
+    schema_module = schema(msg, protocol_name)
 
     unless :code.is_loaded(schema_module) do
       contents =
@@ -94,8 +87,8 @@ defmodule BSPL.Adaptor.Worker do
 
   ## Functions for enabled_messages/0
 
-  defp enabled_messages(all_messages, role, module, repo) do
-    map = enabled_messages_db_data(all_messages, role, module, repo)
+  defp enabled_messages(all_messages, role, protocol_name, repo) do
+    map = enabled_messages_db_data(all_messages, role, protocol_name, repo)
 
     map_including_zero_in_msgs =
       all_messages
@@ -118,11 +111,11 @@ defmodule BSPL.Adaptor.Worker do
     |> Enum.into(%{})
   end
 
-  defp enabled_messages_db_data(all_messages, role, module, repo) do
+  defp enabled_messages_db_data(all_messages, role, protocol_name, repo) do
     for msg <- all_messages,
         sent_by?(msg, role) and
           params(msg) |> adorned_with(:in) != [] do
-      query = select_enabled_messages(msg, all_messages, role, module)
+      query = select_enabled_messages(msg, all_messages, role, protocol_name)
       result = repo.query!(query)
 
       cols = result.columns |> Enum.map(&to_existing_atom/1)
@@ -141,10 +134,10 @@ defmodule BSPL.Adaptor.Worker do
   been sent before.
   """
   # TODO: return curried functions? or changesets
-  defp select_enabled_messages(msg, all_msgs, role, module) do
-    table_name = table_name(schema(msg, module))
-    primary_key = primary_key(schema(msg, module))
-    received_schemas = all_msgs |> received_by(role) |> Enum.map(&schema(&1, module))
+  defp select_enabled_messages(msg, all_msgs, role, protocol_name) do
+    table_name = table_name(schema(msg, protocol_name))
+    primary_key = primary_key(schema(msg, protocol_name))
+    received_schemas = all_msgs |> received_by(role) |> Enum.map(&schema(&1, protocol_name))
 
     # map of the form %{item_id: Schema.Items, price: Schema.Prices}
     field_to_schema_map =
@@ -213,8 +206,13 @@ defmodule BSPL.Adaptor.Worker do
 
   ## HELPER FUNCTIONS
 
-  defp schema(msg, module) do
-    Module.concat([module, "Schema", name(msg)])
+  defp schema(message, protocol_name) do
+    Module.concat([
+      BSPL,
+      Schemas,
+      protocol_name |> Macro.camelize(),
+      message |> name() |> Macro.camelize()
+    ])
   end
 
   def to_field(_param = {_, name, _}) do
