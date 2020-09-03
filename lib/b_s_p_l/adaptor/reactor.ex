@@ -26,6 +26,29 @@ defmodule BSPL.Adaptor.Reactor do
   defmacro __before_compile__(_env) do
     quote do
       def _gen_reactor do
+        import BSPL.Parser, only: [received_by: 2, name: 1]
+
+        # validate reactor functions
+        expected_functions =
+          @messages
+          |> received_by(@role)
+          |> Enum.map(fn msg -> "react_#{name(msg)}" end)
+          |> Enum.sort()
+          |> Enum.join(", ")
+
+        actual_functions =
+          @functions
+          |> Enum.map(fn func -> elem(func, 0) end)
+          |> Enum.sort()
+          |> Enum.join(", ")
+
+        unless expected_functions == actual_functions do
+          raise ArgumentError, "Missing reactor function definitions,
+          expected: #{expected_functions},
+          got: #{actual_functions}."
+        end
+
+        # create reactor module
         module_name = Module.concat([BSPL, Protocols, Macro.camelize(@name), Reactor])
 
         contents =
