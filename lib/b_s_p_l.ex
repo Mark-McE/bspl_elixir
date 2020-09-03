@@ -42,6 +42,7 @@ defmodule BSPL do
       @repo opts[:repo]
       @port opts[:port] || 8591
 
+      use BSPL.Adaptor.Reactor
       use Supervisor
 
       def start_link(opts) do
