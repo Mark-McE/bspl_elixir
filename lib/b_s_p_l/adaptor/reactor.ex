@@ -13,18 +13,8 @@ defmodule BSPL.Adaptor.Reactor do
     end
   end
 
-  defmacro put(msg_name, do: block) do
-    function_name = String.to_atom("put_" <> msg_name)
-
-    quote do
-      # Prepend the newly defined function to the list of functions
-      @functions {unquote(function_name), __MODULE__}
-      def unquote(function_name)(), do: unquote(block)
-    end
-  end
-
-  defmacro post(msg_name, do: block) do
-    function_name = String.to_atom("post_" <> msg_name)
+  defmacro react(msg_name, do: block) do
+    function_name = String.to_atom("react_" <> msg_name)
 
     quote do
       # Prepend the newly defined function to the list of functions
