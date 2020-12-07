@@ -1,6 +1,6 @@
 # BSPL
 
-Parser and network adaptor for the Blindingly Simple Protocol Language.
+Parser and network adaptor for the [Blindingly Simple Protocol Language](https://www.csc2.ncsu.edu/faculty/mpsingh/papers/mas/AAMAS-11-IBIOP.pdf).
 
 ## Installation
 
@@ -9,7 +9,7 @@ The package can be installed by adding `bspl` to your list of dependencies in `m
 ```elixir
 def deps do
   [
-    {:bspl, git: "https://github.com/mark-mce/bspl_elixir.git"}
+    {:bspl, git: "https://github.com/markthequark/bspl_elixir.git"}
   ]
 end
 ```
